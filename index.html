@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Reactivity System Demo</title>
+  <script src="dep.js"></script>
+  <script src="watcher.js"></script>
+  <script src="observer.js"></script>
+</head>
+
+<body>
+
+    <p onclick="alert('click!')" watch="usuario">{{nombre}} ({{notificaciones}})</p>
+    <h2 watch="menu">{{desc}}</h2>
+
+  <ul watch="usuarios">
+    <li>{{nombre}} ** {{apellidos}}</li>
+  </ul>
+
+  <script>
+
+    var usuario = {
+      nombre: "Ivan",
+      notificaciones: 3
+    }
+    var usuarios = [
+      {nombre: "Luis", apellidos: "Garcia"},
+      { nombre: "Javier", apellidos: "Lopez" },
+      { nombre: "Hugo", apellidos: "Sanchez" }
+    ]
+
+    window.watchers = {};
+    window.watchers.usuario = usuario;
+    window.watchers.menu = { desc : "Prospectos"};
+    window.watchers.usuarios = usuarios;
+
+    let elemToWatch = document.querySelectorAll('[watch]');
+
+
+
+
+
+
+    for(i = 0; i < elemToWatch.length; ++i) {
+
+      let watched = elemToWatch[i];
+      let watchName = watched.getAttribute("watch")
+      let arrayEntries = [];
+
+
+      const render = function (val) {
+        let newCode = '';
+        watchData = window.watchers[watchName];
+        watchCode = window.watchers[watchName].code
+
+        if (watchData.constructor == Array) {
+          watchData.forEach(element => {
+            newCode += replaceHbsParams(watchCode, element);
+          });
+        }
+        else
+          newCode = replaceHbsParams(watchCode, watchData);
+
+        let element = window.watchers[watchName].obj;
+        if (element)
+          element.innerHTML = newCode;
+
+      }
+      
+      
+      
+      window.watchers[watchName].code = watched.innerHTML;      
+      window.watchers[watchName].obj = watched;      
+      walk(window.watchers[watchName]);
+
+
+      if (window.watchers[watchName].constructor == Array) {
+        window.watchers[watchName].map((obj)=>{
+          new Watcher(() =>
+            Object.entries(obj).map(([k, v]) => ({ [k]: v })),
+            render
+          ); 
+        })
+      }
+       else{
+        new Watcher(() =>
+          Object.entries(window.watchers[watchName]).map(([k, v]) => ({ [k]: v })),
+          render
+        ); 
+      }     
+    }
+
+
+    
+
+
+    function replaceHbsParams (text, data) {
+      if(!text) {
+        return '';
+      }
+      return text.replace(/\{\{(.*?)\}\}/g, (p) => {
+        const value = data[p.substring(2, p.length - 2)];
+        if (value !== undefined && value !== null && value !== '') {
+          return  value
+        } else {
+          return '';
+        }
+      });
+    }
+
+  </script>
+</body>
+
+</html>
